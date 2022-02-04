@@ -6,7 +6,7 @@ const ganache = require('ganache-cli');
 // how to communicate our code with that.
 const Web3 = require('web3')
 // get the interface and definition from contract , once compiled
-const contractCompiler = require('../compile')
+const contractCompiler = require('../config/compile/Inbox')
 
 const localNetworkProvider = ganache.provider();
 const web3 = new Web3(localNetworkProvider)
@@ -61,14 +61,25 @@ describe ('Inbox Contract tests', () => {
             expect(inbox.options.address).not.to.be.null;
             expect(inbox.options.address.length).to.eq(42);
         })
-        it( 'and contract is created returns default message', async () => {
+        it( 'once created returns default message', async () => {
             const message = await inbox.methods
                 // here we go with the method from contract and params if needed
                 .message()
                 // here we go to connect to EN and tx data if needed
+                // Call is a read only instantaneous operation!! and it's free!
                 .call();
             expect(message).to.eq(initialMessage);
         })
-    })
 
+        it('once created can change the message', async () =>  {
+            let anAccount = accounts[0];
+            // if transaction fail will throw an error, and if it's success should retrieve tx id
+            // no need to catch or anything
+            await inbox.methods.setMessage('bye')
+                // Send is a transactional operation , cost MONEY and takes at least 15seconds to be completed in a real EN
+                .send({ from: anAccount });
+            const message = await inbox.methods.message().call();
+            expect(message).to.eq('bye');
+        });
+    })
 })
